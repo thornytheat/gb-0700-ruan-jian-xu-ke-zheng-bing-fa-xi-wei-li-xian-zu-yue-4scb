@@ -6,6 +6,13 @@
 
 按租约有效区间扫线统计并发，同刻先结束后开始；离线到期前始终占席，重复心跳不重复占用。
 
+## 共享席位池
+
+产品线合并后 CAD 与 Render 共用一个席位池：每份租约保留签发时的原产品契约，
+合并池内统一限席；释放回执只匹配原契约，新租约按合并产品 `CAD+RENDER` 签发。
+池切换可中断与接续，未完成时页面与证据保持旧版分产品视图。采购数量不变。详见
+`docs/POOLS.md`。
+
 ## 启动
 
 ```bash
@@ -28,7 +35,7 @@ docker compose config --quiet
 
 ## 输入与输出
 
-CSV可用UTF-8或GB18030；上传保留字符串编号和物理行号。POST `/api/run` 接收 `text` 字段。`GET /api/runs` 查询历史，`POST /api/review` 接收 id、revision、decision。导出按钮下载唯一证据CSV，含运行摘要与隔离记录。
+CSV可用UTF-8或GB18030；上传保留字符串编号和物理行号。POST `/api/run` 接收 `text` 字段。`GET /api/runs` 查询历史，`POST /api/review` 接收 id、revision、decision。`GET/POST /api/pools/{pool}` 查看或执行池切换。导出按钮下载唯一证据CSV，含运行摘要、原产品凭据、池切换台账、共享池容量与超用归属及隔离记录。
 
 SQLite命名卷保存运行记录。重建演示数据可更换卷名后重启。无需外部网络数据。规则定义见 `docs/DATA-DICTIONARY.md`；边界和测试对应关系见 `docs/DEPTH.md`。
 

@@ -27,10 +27,20 @@
 | TRAP-19 | 采购版冲突 | 静默采信错误值 | 显式版本优先级 | `app/modules/m5_excess/rules.py` | `tests/test_excess.py::test_excess_capacity_version` |
 | TRAP-23 | 同刻交接 | 静默采信错误值 | 先结束后开始 | `app/modules/m4_concurrency/rules.py` | `tests/test_concurrency.py::test_sweep_boundary` |
 | TRAP-26 | 陈旧补传 | 静默采信错误值 | 递增版本 | `app/modules/m7_audit/rules.py` | `tests/test_audit.py::test_audit_stale` |
+| TRAP-31 | 合并后重映射旧回执 | 旧租约被改挂到合并产品，旧回执失效或静默释放 | 租约保留原产品契约，回执只按原契约+同版本匹配，失配项单独审计 | `app/modules/m3_leases/rules.py` | `tests/test_pools.py::test_release_matches_original_contract_only` |
+| TRAP-32 | 分产品限额算共享池 | 两个产品各自拿全部池容量，超用被漏计 | 合并视图按池内各契约采购量之和限席，容量逐契约拆解 | `app/modules/m5_excess/rules.py` | `tests/test_pools.py::test_merged_pool_does_not_double_book_capacity` |
+| TRAP-33 | 切换中断后视图错乱 | 页面显示半迁移数据或重复占席 | 未完成切换落回旧版分产品视图；重试只接续未迁移租约 | `app/store.py`、`app/rollout.py` | `tests/test_switch.py::test_interrupted_switch_keeps_legacy_view` |
+| TRAP-34 | 重试同一合并重复占席 | 每次重试重新登记已迁移租约 | 迁移台账按 lease_key 主键去重，已完成切换原样返回 | `app/store.py` | `tests/test_switch.py::test_retry_same_merge_does_not_double_occupy` |
+| TRAP-35 | 切换期间新租约无处归 | 新合并租约被塞进某个原产品，虚增其超用 | 旧版视图单列"待切换"，席位照实呈现；切换完成后并入共享池 | `app/modules/m6_purchase/rules.py` | `tests/test_switch.py::test_new_merged_lease_issues_in_pool_not_old_contract` |
+| TRAP-36 | 切换期间旧回执补传 | 新提交的旧契约租约被悄悄扩大合并范围 | 旧租约集合变化返回409，须显式重置后重新合并 | `app/store.py` | `tests/test_switch.py::test_additional_old_contract_lease_conflicts_until_reset` |
+
+## 共享池
+
+契约、池与切换状态机见 `docs/POOLS.md`。切换接口：`GET/POST /api/pools/{pool}`。
 
 ## 对账规则
 
-输入记录=采信记录+隔离记录+空行；重复记录归隔离；算法输出另记业务单位，不冒充输入行数。金额/浓度/时长使用Decimal；证据含原始行号。
+输入记录=采信记录+隔离记录+空行；重复记录归隔离；算法输出另记业务单位，不冒充输入行数。金额/浓度/时长使用Decimal；证据含原始行号。池汇总的超用席位小时等于各原契约归属之和。
 
 ## 已知不覆盖
 
